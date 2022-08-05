@@ -1,0 +1,54 @@
+{
+    // These settings tweaks to the cmake plugin will ensure
+    // that you debug using cortex-debug instead of trying to launch
+    // a Pico binary on the host
+    "cmake.statusbar.advanced": {
+        "debug": {
+            "visibility": "hidden"
+        },
+    },
+    "cmake.buildBeforeRun": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "string.h": "c",
+        "board.h": "c",
+        "flash.h": "c",
+        "stdio.h": "c",
+        "tusb.h": "c",
+        "vendor_device.h": "c",
+        "midi_device.h": "c",
+        "cdc_device.h": "c",
+        "tusb_config.h": "c",
+        "stdlib.h": "c",
+        "msd_flash_config.h": "c",
+        "pico.h": "c",
+        "version.h": "c",
+        "config.h": "c",
+        "platform.h": "c",
+        "error.h": "c",
+        "types.h": "c",
+        "ff.h": "c",
+        "stdbool.h": "c",
+        "stddef.h": "c",
+        "rosc.h": "c",
+        "scb.h": "c",
+        "mk90.h": "c",
+        "clocks.h": "c",
+        "driver.h": "c",
+        "bus_ctrl.h": "c",
+        "sync.h": "c",
+        "mk90.pio.h": "c",
+        "platform_defs.h": "c",
+        "xip_ctrl.h": "c",
+        "pll.h": "c",
+        "adc.h": "c",
+        "xosc.h": "c",
+        "type_traits": "c",
+        "psm.h": "c",
+        "main.h": "c",
+        "usbd_pvt.h": "c",
+        "tusb_fifo.h": "c",
+        "resets.h": "c",
+        "syscfg.h": "c"
+    }
+}

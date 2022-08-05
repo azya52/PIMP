@@ -1,0 +1,104 @@
+.define SENDED_IRQ 3
+.define CLK_IRQ 7
+.define PIN_CLK 4
+.define PIN_DATA 3
+.define PIN_SEL 2
+
+.program clocked_tx
+.side_set 1 opt pindirs
+
+    .wrap_target
+start:
+    pull block                  ;wait FIFO
+    irq clear SENDED_IRQ
+
+bitloop:
+    wait 1 gpio PIN_CLK         ;wait CLOCK rise
+wait0:                          ;wait CLOCK fall or SELECT rise
+    mov ISR, NULL
+    in pins, 1
+    mov x, ISR
+    jmp pin finish              ;stop transmission if SELECT is hight
+    jmp x--, wait0              ;wait CLOCK fall
+    out pins, 1         side 1  ;out DATA and set pindirs, 1
+    jmp !OSRE bitloop   
+    
+    wait 1 gpio PIN_CLK         ;wait CLOCK rise
+finish:
+    irq SENDED_IRQ      side 0  ;set pindirs, 0
+    .wrap
+
+
+.program clocked_rx
+    .wrap_target
+start:
+    ;wait 0 gpio PIN_SEL
+    mov ISR, NULL
+bitloop:
+    wait 1 gpio PIN_CLK
+    ;jmp pin start
+    wait 0 gpio PIN_CLK
+    in pins, 1
+    jmp bitloop
+    .wrap
+
+% c-sdk {
+    #define PIN_SELECT 2
+    #define PIN_DATA 3
+    #define PIN_CLK 4
+
+    #define SENDED_IRQ 3
+
+static inline void mk90bus_program_init(PIO pio, uint sm_tx, uint sm_rx) {
+    pio_gpio_init(pio, PIN_DATA);
+    pio_gpio_init(pio, PIN_CLK);
+    pio_gpio_init(pio, PIN_SELECT);
+
+    gpio_set_slew_rate(PIN_DATA, GPIO_SLEW_RATE_FAST);
+
+    //state machine tx
+    uint clocked_tx_pr = pio_add_program(pio, &clocked_tx_program);
+    pio_sm_config sm_tx_config = clocked_tx_program_get_default_config(clocked_tx_pr);
+    pio_sm_set_consecutive_pindirs(pio, sm_tx, PIN_CLK, 3, false);
+    sm_config_set_in_pins(&sm_tx_config, PIN_CLK);
+    sm_config_set_in_shift(&sm_tx_config, false, false, 1);
+    sm_config_set_jmp_pin(&sm_tx_config, PIN_SELECT);
+    sm_config_set_out_pins(&sm_tx_config, PIN_DATA, 1);
+    sm_config_set_sideset_pins(&sm_tx_config, PIN_DATA);  
+    sm_config_set_out_shift(&sm_tx_config, false, false, 8);
+    sm_config_set_fifo_join(&sm_tx_config, PIO_FIFO_JOIN_TX);
+    pio_sm_init(pio, sm_tx, clocked_tx_pr, &sm_tx_config);
+
+    //state machine rx
+    uint clocked_rx_pr = pio_add_program(pio, &clocked_rx_program);
+    pio_sm_config sm_rx_config = clocked_rx_program_get_default_config(clocked_rx_pr);
+    pio_sm_set_consecutive_pindirs(pio, sm_rx, PIN_CLK, 3, false);
+    sm_config_set_jmp_pin(&sm_rx_config, PIN_SELECT);
+    sm_config_set_in_pins(&sm_rx_config, PIN_DATA);
+    sm_config_set_in_shift(&sm_rx_config, false, true, 8);
+    sm_config_set_fifo_join(&sm_rx_config, PIO_FIFO_JOIN_RX);
+    pio_sm_init(pio, sm_rx, clocked_rx_pr, &sm_rx_config);
+
+    pio_sm_set_enabled(pio, sm_tx, true);
+    pio_sm_set_enabled(pio, sm_rx, true);
+}
+
+static inline uint32_t mk90bus_read8(PIO pio, uint32_t sm) {
+    while (pio_sm_is_rx_fifo_empty(pio, sm))
+        tight_loop_contents();
+    return pio->rxf[sm];
+}
+
+static inline uint32_t mk90bus_read16(PIO pio, uint32_t sm) {
+    while (pio_sm_get_rx_fifo_level(pio, sm) < 2)
+        tight_loop_contents();
+    return (pio->rxf[sm] << 8) + pio->rxf[sm];
+}
+
+static inline uint32_t mk90bus_read24(PIO pio, uint32_t sm) {
+    while (pio_sm_get_rx_fifo_level(pio, sm) < 3)
+        tight_loop_contents();
+    return (pio->rxf[sm] << 16) + (pio->rxf[sm] << 8) + pio->rxf[sm];
+}
+
+%}
