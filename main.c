@@ -191,11 +191,11 @@ FRESULT openFile(char *filename) {
 			if (fr == FR_OK && (strcmp(fno.fname, "AUTORUN.BIN") != 0) && !(fno.fattrib & AM_DIR)) {
 				strcpy(fileList[i++], fno.fname);
 			}
-		} while (fr == FR_OK && i < 255);
+		} while (fr == FR_OK && i < 255 && fno.fname[0] != 0);
 		f_closedir(&dj);
     }
 
-    if(filename != NULL) {
+    if (filename != NULL) {
     	fr = f_open(&appFile, filename, FA_READ);
     }
 
