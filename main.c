@@ -215,16 +215,19 @@ FRESULT openFile(char *filename) {
 
 static void remount(void) {
     if (f_mount(&FATFS_Obj, "0", 1) == FR_OK) {
-        openFile("autorun.bin");
+        openFile("AUTORUN.BIN");
     }
 }
 
 static inline void parseCommand(uint32_t command) {
     switch(command) {
+        case 0x18:
+        case 0x10: // read postdecrement
         case 0xD8:
         case 0xD0: {// read postincrement
                 do {
                     pio_sm_put(pio, sm_tx, readBuffer << 24);
+                    if ((command & 0xC0) == 0) f_lseek(&appFile, appFile.fptr-2); // postdecrement
                     f_read_byte(&appFile, &readBuffer);
                     while (!pio_interrupt_get(pio, SENDED_IRQ)) tight_loop_contents();
                 } while(!gpio_get(PIN_SELECT));
@@ -248,7 +251,7 @@ static inline void parseCommand(uint32_t command) {
             f_read_byte(&appFile, &readBuffer);
             break;
 
-        case 0xF0: {
+        case 0xF0: { // Genjitsu: get files list
             uint32_t i = 0;
             while (fileList[i][0]) {
                 uint32_t j = 0;
@@ -263,7 +266,7 @@ static inline void parseCommand(uint32_t command) {
             }
             break;
 
-        case 0xF1: {
+        case 0xF1: { // Genjitsu: mount selected file
                 char filename[12+1] = {0,};
                 uint32_t i = 0;
                 do {
@@ -274,9 +277,12 @@ static inline void parseCommand(uint32_t command) {
                 }
             }
             break;
+            
+        case 0xF2: // Genjitsu: unmount current file and go to the autorun
+            remount();
+            break;
 
-        default: // unknown command
-            error_handler();
+        default: // unknown command - just ignore
             break;
     }
 }
@@ -316,7 +322,7 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
     (void) itf;
     // connected
     if (dtr && rts) {
-        tud_cdc_write_str("\r\nPIMP v1.0\r\n");
+        tud_cdc_write_str("\r\nPIMP v1.1\r\n");
         tud_cdc_write_flush();
     }
 }

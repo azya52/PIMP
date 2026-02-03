@@ -1,0 +1,22 @@
+# pico-sdk related
+_deps
+pico-sdk
+pico_extras
+picotool
+pioasm
+pioasm-install
+
+# Generated
+generated
+pico_flash_region.ld
+*.pio.h
+*.dis
+*.map
+
+# Cmake
+Makefile
+CMakeFiles
+CMakeCache.txt
+*.cmake
+!pico_extras_import.cmake
+!pico_sdk_import.cmake

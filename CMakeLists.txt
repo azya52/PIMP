@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD 17)
 # initialize the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build/")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "build/")
+
 add_executable(pimp
     main.c
     msc_disk.c
@@ -42,5 +45,5 @@ pico_add_extra_outputs(pimp)
 
 add_custom_command(TARGET pimp
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/pimp.uf2 E:/pimp.uf2
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/build/pimp.uf2 E:/pimp.uf2
 )
